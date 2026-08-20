@@ -1,6 +1,6 @@
 [project]
 name = "steam-cookies"
-version = "0.1.0"
+version = "0.2.0"
 description = "Get Steam web session cookies from a desktop/mobile refresh token, via REST or a real CM session"
 readme = "README.md"
 requires-python = ">=3.10"
