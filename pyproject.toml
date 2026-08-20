@@ -1,0 +1,64 @@
+[project]
+name = "steam-cookies"
+version = "0.1.0"
+description = "Get Steam web session cookies from a desktop/mobile refresh token, via REST or a real CM session"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "httpx>=0.27",
+    "pydantic>=2",
+    "cryptography>=42",
+    "protobuf>=5",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[project.optional-dependencies]
+codegen = ["grpcio-tools>=1.60"]
+# Only needed for `steam-cookies extract-token` (reads local.vdf's
+# DPAPI-encrypted ConnectCache) - not needed for the REST/CM clients.
+local-client = ["pywin32>=306; sys_platform == 'win32'", "vdf>=3.4"]
+
+[project.scripts]
+steam-cookies = "steam_cookies.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.10,<0.11"]
+build-backend = "uv_build"
+
+# steam_cookies/ lives directly at the repo root (no src/ layout).
+[tool.uv.build-backend]
+module-root = ""
+
+[tool.ruff]
+include = ["*.py"]
+line-length = 100
+extend-exclude = ["steam_cookies/pb2"]
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "I", "ANN"]
+
+[tool.mypy]
+exclude = ["steam_cookies/pb2"]
+
+[[tool.mypy.overrides]]
+module = [
+    "steammessages_auth.*",
+    "steammessages_base_pb2",
+    "steammessages_clientserver_login_pb2",
+    "vdf",
+    "win32crypt",
+]
+ignore_missing_imports = true
+
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

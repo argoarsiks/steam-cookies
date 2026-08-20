@@ -1,0 +1,17 @@
+# ide
+.vscode/
+
+# protobuf files
+protobufs/
+
+# environments
+.env
+.venv/
+
+# python files
+__pycache__/
+
+# build artifacts (uv build / release workflow)
+dist/
+.pytest_cache/
+.ruff_cache/

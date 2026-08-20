@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 0.2.0 (no leading v)"
+        required: true
+
+permissions:
+  contents: write 
+  id-token: write 
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/steam-cookies/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Normalize version
+        id: version
+        env:
+          RAW_VERSION: ${{ inputs.version }}
+        run: |
+          version="${RAW_VERSION#v}"
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "::error::Tag v$version already exists"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version (pyproject.toml + uv.lock)
+        run: uv version "${{ steps.version.outputs.version }}"
+
+      - run: uvx ruff check .
+      - run: uv run --with mypy mypy steam_cookies
+      - run: uv run pytest
+
+      - name: Commit and tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml uv.lock
+          git commit -m "chore: release v$VERSION"
+          git tag "v$VERSION"
+          git push origin HEAD:"${{ github.ref_name }}"
+          git push origin "v$VERSION"
+
+      - name: Build
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish --trusted-publishing automatic
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: dist/*
